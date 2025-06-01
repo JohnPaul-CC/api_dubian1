@@ -15,9 +15,9 @@ object DatabaseConnection {
 
     // 🔧 CONFIGURACIÓN DE BASE DE DATOS
     // TODO: Cambiar estos valores por tu configuración real
-    private const val DB_URL = "jdbc:postgresql://localhost:5432/dubium"
-    private const val DB_USER = "dubiumuser"
-    private const val DB_PASSWORD = "password123"
+    private const val DB_URL = "jdbc:postgresql://dubium-db.c9yesoygivci.eu-north-1.rds.amazonaws.com:5432/dubium"
+    private const val DB_USER = "dubiumuser"  //
+    private const val DB_PASSWORD = "Pal1tx23"  //
 
     // Para AWS RDS, cambiar DB_URL por algo como:
     // private const val DB_URL = "jdbc:postgresql://tu-endpoint.rds.amazonaws.com:5432/dubium"
@@ -41,12 +41,19 @@ object DatabaseConnection {
      */
     fun initDatabase() {
         try {
+            println("🔍 Intentando conectar para crear tablas...")
             getConnection().use { conn ->
+                println("🔍 Conexión obtenida, creando tabla...")
                 createUsersTable(conn)
                 println("✅ Base de datos inicializada correctamente")
             }
         } catch (e: SQLException) {
-            println("❌ Error inicializando base de datos: ${e.message}")
+            println("❌ Error SQL inicializando base de datos: ${e.message}")
+            e.printStackTrace()
+            throw e
+        } catch (e: Exception) {
+            println("❌ Error general inicializando base de datos: ${e.message}")
+            e.printStackTrace()
             throw e
         }
     }

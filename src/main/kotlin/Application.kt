@@ -11,36 +11,12 @@ import com.example.database.DatabaseConnection
  * Configura y arranca el servidor Ktor en puerto 8080
  */
 fun main() {
-    println("🚀 Iniciando Dubium API...")
-
-    try {
-        // 🗄️ Inicializar base de datos antes de arrancar servidor
-        println("📋 Inicializando base de datos...")
-        DatabaseConnection.initDatabase()
-
-        // ✅ Verificar conectividad
-        if (DatabaseConnection.testConnection()) {
-            println("✅ Conexión a base de datos exitosa")
-        } else {
-            println("Error: No se puede conectar a la base de datos")
-            println("Verifica que PostgreSQL esté ejecutándose")
-            return
-        }
-
-        // 🖥️ Configurar y arrancar servidor
-        println("🌐 Arrancando servidor en puerto 8080...")
-        embeddedServer(
-            factory = Netty,              // Usar Netty como servidor HTTP
-            port = 8080,                  // Puerto donde escuchar
-            host = "0.0.0.0",            // Escuchar en todas las interfaces
-            module = Application::module  // Función de configuración
-        ).start(wait = true)             // Bloquear thread principal
-
-    } catch (e: Exception) {
-        println("💥 Error fatal arrancando la aplicación:")
-        println("   ${e.message}")
-        e.printStackTrace()
-    }
+    embeddedServer(
+        factory = Netty,
+        port = 8080,
+        host = "0.0.0.0",
+        module = Application::module
+    ).start(wait = true)
 }
 
 /**
@@ -52,6 +28,17 @@ fun Application.module() {
     println("⚙️ Configurando módulos de la aplicación...")
 
     try {
+        // 🗄️ INICIALIZAR BASE DE DATOS PRIMERO
+        println("📋 Inicializando base de datos...")
+        DatabaseConnection.initDatabase()
+
+        if (DatabaseConnection.testConnection()) {
+            println("✅ Conexión a base de datos exitosa")
+        } else {
+            println("❌ Error: No se puede conectar a la base de datos")
+            throw Exception("Database connection failed")
+        }
+
         // 📄 1. Configurar serialización JSON (debe ir primero)
         configureSerialization()
         println("✅ Serialización JSON configurada")

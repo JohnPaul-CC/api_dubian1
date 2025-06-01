@@ -21,11 +21,14 @@ fun Application.configureRouting() {
 
         // 🧪 Test endpoint - para probar conexión desde Android
         get("/test") {
-            call.respond(mapOf(
-                "status" to "OK",
-                "message" to "API conectada",
-                "timestamp" to System.currentTimeMillis()
-            ))
+            call.respond(
+                status = HttpStatusCode.OK,
+                message = mapOf(
+                    "status" to "OK",
+                    "message" to "API conectada",
+                    "timestamp" to System.currentTimeMillis()
+                )
+            )
         }
 
         // 🔐 ENDPOINTS PÚBLICOS (no requieren token)
@@ -222,21 +225,23 @@ fun Application.configureRouting() {
         // 🔍 Endpoint para debugging (solo en desarrollo)
         get("/debug/users") {
             try {
-                // Solo habilitar en desarrollo
-                val isDevelopment = environment.developmentMode
-                if (!isDevelopment) {
-                    call.respond(HttpStatusCode.NotFound, ErrorResponse(
-                        error = "Endpoint no disponible"
-                    ))
-                    return@get
-                }
-
+                // Permitir siempre en desarrollo local
                 val users = userService.getAllUsers()
-                call.respond(mapOf(
+
+                // Crear respuesta simple sin mezclar tipos
+                val response = mapOf(
                     "success" to true,
-                    "users" to users,
-                    "count" to users.size
-                ))
+                    "count" to users.size,
+                    "users" to users.map { user ->
+                        mapOf(
+                            "id" to user.id,
+                            "username" to user.username,
+                            "createdAt" to user.createdAt
+                        )
+                    }
+                )
+
+                call.respond(HttpStatusCode.OK, response)
 
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse(
