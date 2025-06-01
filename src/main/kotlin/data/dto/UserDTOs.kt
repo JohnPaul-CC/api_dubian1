@@ -102,3 +102,36 @@ data class LogoutResponse(
     val success: Boolean,
     val message: String
 )
+
+// 🆕 NUEVOS DTOs PARA ARREGLAR EL ERROR DE SERIALIZACIÓN:
+
+/**
+ * Respuesta del endpoint /test
+ */
+@Serializable
+data class TestResponse(
+    val status: String,
+    val message: String,
+    val timestamp: Long
+)
+
+/**
+ * Respuesta del endpoint /debug/users
+ */
+@Serializable
+data class DebugUsersResponse(
+    val success: Boolean,
+    val count: Int,
+    val users: List<UserDto>
+)
+
+/**
+ * Respuesta para estadísticas de usuarios
+ */
+@Serializable
+data class UserStatsResponse(
+    val success: Boolean,
+    val totalUsers: Int,
+    val databaseConnected: Boolean,
+    val error: String? = null
+)

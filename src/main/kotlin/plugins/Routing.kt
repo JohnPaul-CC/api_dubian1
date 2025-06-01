@@ -21,14 +21,12 @@ fun Application.configureRouting() {
 
         // 🧪 Test endpoint - para probar conexión desde Android
         get("/test") {
-            call.respond(
-                status = HttpStatusCode.OK,
-                message = mapOf(
-                    "status" to "OK",
-                    "message" to "API conectada",
-                    "timestamp" to System.currentTimeMillis()
-                )
+            val response = TestResponse(
+                status = "OK",
+                message = "API conectada",
+                timestamp = System.currentTimeMillis()
             )
+            call.respond(HttpStatusCode.OK, response)
         }
 
         // 🔐 ENDPOINTS PÚBLICOS (no requieren token)
@@ -139,24 +137,30 @@ fun Application.configureRouting() {
             // ✅ Verificar si token es válido (para auto-login)
             get("/auth/verify") {
                 try {
+                    println("📡 Server: Request a /auth/verify recibido") // Debug
+
                     val principal = call.principal<JWTPrincipal>()
                     val username = principal!!.payload.getClaim("username").asString()
                     val userId = principal.payload.getClaim("userId").asInt()
+
+                    println("👤 Server: Usuario del token: $username (ID: $userId)") // Debug
 
                     // Opcional: verificar que el usuario aún existe en BD
                     val result = userService.getUserById(userId)
 
                     result.fold(
                         onSuccess = { user ->
-                            call.respond(mapOf(
-                                "success" to true,
-                                "valid" to true,
-                                "user" to user,
-                                "message" to "Token válido"
+                            println("✅ Server: Token verificado exitosamente") // Debug
+                            // ✅ USAR TokenVerificationResponse (ya está definido)
+                            call.respond(TokenVerificationResponse(
+                                success = true,
+                                valid = true,
+                                user = user,
+                                message = "Token válido"
                             ))
                         },
                         onFailure = {
-                            // Usuario fue eliminado pero token aún es válido
+                            println("❌ Server: Usuario no válido") // Debug
                             call.respond(HttpStatusCode.Unauthorized, ErrorResponse(
                                 error = "Usuario no válido"
                             ))
@@ -164,6 +168,7 @@ fun Application.configureRouting() {
                     )
 
                 } catch (e: Exception) {
+                    println("💥 Server: Error en /auth/verify: ${e.message}") // Debug
                     call.respond(HttpStatusCode.Unauthorized, ErrorResponse(
                         error = "Token inválido",
                         message = e.message
@@ -174,19 +179,30 @@ fun Application.configureRouting() {
             // 👤 Obtener perfil del usuario actual
             get("/user/profile") {
                 try {
+                    println("📡 Server: Request a /user/profile recibido")
+
+                    val authHeader = call.request.headers["Authorization"]
+                    println("🔑 Server: Auth header: $authHeader")
+
                     val principal = call.principal<JWTPrincipal>()
+                    println("👤 Server: Principal obtenido: $principal")
+
                     val userId = principal!!.payload.getClaim("userId").asInt()
+                    println("🆔 Server: User ID del token: $userId")
 
                     val result = userService.getUserById(userId)
 
                     result.fold(
                         onSuccess = { user ->
-                            call.respond(mapOf(
-                                "success" to true,
-                                "data" to user
+                            println("✅ Server: Usuario encontrado: $user")
+                            // ✅ CAMBIAR ESTA LÍNEA:
+                            call.respond(ApiResponse(
+                                success = true,
+                                data = user
                             ))
                         },
                         onFailure = { error ->
+                            println("❌ Server: Error buscando usuario: ${error.message}")
                             call.respond(HttpStatusCode.NotFound, ErrorResponse(
                                 error = error.message ?: "Usuario no encontrado"
                             ))
@@ -194,6 +210,8 @@ fun Application.configureRouting() {
                     )
 
                 } catch (e: Exception) {
+                    println("💥 Server: Excepción en /user/profile: ${e.message}")
+                    e.printStackTrace()
                     call.respond(HttpStatusCode.InternalServerError, ErrorResponse(
                         error = "Error obteniendo perfil",
                         message = e.message
@@ -225,20 +243,12 @@ fun Application.configureRouting() {
         // 🔍 Endpoint para debugging (solo en desarrollo)
         get("/debug/users") {
             try {
-                // Permitir siempre en desarrollo local
                 val users = userService.getAllUsers()
 
-                // Crear respuesta simple sin mezclar tipos
-                val response = mapOf(
-                    "success" to true,
-                    "count" to users.size,
-                    "users" to users.map { user ->
-                        mapOf(
-                            "id" to user.id,
-                            "username" to user.username,
-                            "createdAt" to user.createdAt
-                        )
-                    }
+                val response = DebugUsersResponse(
+                    success = true,
+                    count = users.size,
+                    users = users
                 )
 
                 call.respond(HttpStatusCode.OK, response)
